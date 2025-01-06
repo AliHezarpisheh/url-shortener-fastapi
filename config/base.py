@@ -2,10 +2,10 @@
 
 from .database import AsyncDatabaseConnection
 from .logging import LoggingConfig
-from .settings.base import Settings
+from .settings.base import get_settings
 
 # Settings
-settings = Settings()
+settings = get_settings()
 
 # Logging
 logger = LoggingConfig(env=settings.env).get_logger()

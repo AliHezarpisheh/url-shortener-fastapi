@@ -1,6 +1,7 @@
 """Module for handling all the settings in the application."""
 
 import os
+from functools import lru_cache
 from typing import Annotated
 
 from pydantic import Field
@@ -65,3 +66,9 @@ class Settings(BaseSettings):
             env_settings,  # Read from environments variables
             file_secret_settings,  # Read from any file secret settings if applicable
         )
+
+
+@lru_cache
+def get_settings() -> Settings:
+    """Return an instance of `Settings`, using lru caching."""
+    return Settings()
