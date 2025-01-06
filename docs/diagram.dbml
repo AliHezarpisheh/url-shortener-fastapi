@@ -1,0 +1,14 @@
+Project url_shortener {
+    database: 'PostgreSQL'
+    Note: 'Backend for a url shortener service using FastAPI.'
+}
+
+
+Table urls {
+    key varchar [unique, not null, index, note: "Unique shortened URL key"]
+    target_url varchar [not null, index, note: "Original URL being shortened"]
+    is_active boolean [default: true, not null, note: "URL activation status (True = active, False = inactive)"]
+    clicks int [default: 0, not null, note: "Number of times the URL has been accessed"]
+
+    Note: "Table for storing shortened URLs and associated metadata"
+}
