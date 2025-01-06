@@ -14,7 +14,7 @@ class Url(CommonMixin, Base):
         unique=True, index=True, comment="Unique shortened URL key"
     )
     target_url: Mapped[str] = mapped_column(
-        index=True, comment="Original URL being shortened"
+        index=True, unique=True, comment="Original URL being shortened"
     )
     is_active: Mapped[bool] = mapped_column(
         default=True, comment="URL activation status (True = active, False = inactive)"
