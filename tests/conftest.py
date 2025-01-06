@@ -1,6 +1,6 @@
 """Custom fixtures and configurations for pytest tests."""
 
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -126,7 +126,7 @@ async def db_session(
 @pytest.fixture(autouse=True)
 def override_get_db_session(
     db_session: async_scoped_session[AsyncSession], db_engine: AsyncEngine
-):
+) -> None:
     """
     Override the get_async_db_session dependency to use the provided database session.
 
