@@ -1,0 +1,37 @@
+services:
+  url-shortener-service:
+    container_name: url-shortener-service
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["fastapi", "run", "--workers", "4"]
+    ports:
+      - 9256:8000
+    env_file:
+      - .env.production
+    depends_on:
+      - url-shortener-db
+    restart: unless-stopped
+    networks:
+      - url-shortener-network
+
+  url-shortener-db:
+    container_name: url-shortener-db
+    image: postgres:16.3
+    ports:
+      - 5532:5432
+    env_file:
+      - .env.production
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docs/database/create_db.sql:/docker-entrypoint-initdb.d/create_db.sql
+    restart: unless-stopped
+    networks:
+      - url-shortener-network
+
+volumes:
+  postgres_data:
+
+networks:
+  url-shortener-network:
+    driver: bridge
