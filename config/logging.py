@@ -3,46 +3,10 @@
 import logging
 import logging.config
 import logging.handlers
-import os
 from pathlib import Path
 from typing import Any
 
 from toolkit.parsers import TOMLParser
-
-
-class RelativePathFilter:
-    """A logging filter that adds a `relativepath` attribute to log records."""
-
-    def filter(self, record: logging.LogRecord) -> bool:
-        """
-        Modify the log record to include a `relativepath` attribute.
-
-        Parameters
-        ----------
-        record : logging.LogRecord
-            The log record that is being processed by the filter.
-
-        Returns
-        -------
-        bool
-            Returns True to indicate that the log record should be processed.
-
-        Notes
-        -----
-        The `relativepath` is computed by checking for site-packages`paths.
-        It strips these paths to show only the relevant file path for debugging.
-        """
-        relativepath = os.path.relpath(record.pathname, start=os.getcwd())
-
-        # If the record is for a third-party logger, remove the path to site-packages/.
-        if "site-packages" in relativepath:
-            try:
-                relativepath = relativepath.split("site-packages/")[1]
-            except IndexError:
-                pass  # Ignore if it doesn't match the expected structure.
-        setattr(record, "relativepath", relativepath)
-
-        return True
 
 
 class LoggingConfig:
@@ -75,10 +39,6 @@ class LoggingConfig:
 
         # Set the logger object.
         self._logger = logging.getLogger(self._env)
-
-        # Add RelativePathFilter to all the logger's handlers
-        for handler in self._logger.handlers:
-            handler.addFilter(RelativePathFilter())
 
     @staticmethod
     def validate_and_create_dirs(handlers: dict[str, dict[str, Any]]) -> list[Path]:
