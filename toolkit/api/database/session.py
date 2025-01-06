@@ -1,6 +1,6 @@
 """Dependency injection module for database session dependency, mainly the session."""
 
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 from fastapi import HTTPException, status
 from sqlalchemy.exc import SQLAlchemyError
