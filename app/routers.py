@@ -61,7 +61,6 @@ async def forward_to_target_url(
     Redirect to the target URL associated with the given short URL key.
 
     - **url_key**: The key of the shortened URL.
-    - **request**: The HTTP request object.
     \f
     Parameters
     ----------
@@ -81,3 +80,29 @@ async def forward_to_target_url(
         url_key=url_key, request_url=str(request.url)
     )
     return RedirectResponse(target_url)
+
+
+@router.delete(
+    "/{url_key}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_class=RedirectResponse,
+)
+async def deactivate_url_key(
+    url_key: Annotated[str, Path()],
+    url_shortener_service: Annotated[
+        UrlShortenerService, Depends(get_url_shortener_service)
+    ],
+) -> RedirectResponse:
+    """
+    Deactivate a shortened URL key, preventing further redirection.
+
+    - **url_key**: The key of the shortened URL to deactivate.
+    \f
+    Parameters
+    ----------
+    url_key : str
+        The key of the shortened URL to deactivate.
+    url_shortener_service : UrlShortenerService
+        The service handling URL deactivation logic.
+    """
+    await url_shortener_service.deactivate_url_key(url_key=url_key)

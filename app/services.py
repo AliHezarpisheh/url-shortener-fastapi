@@ -3,7 +3,7 @@
 from typing import Annotated
 
 from fastapi import Depends, HTTPException, status
-from sqlalchemy import insert, select, update
+from sqlalchemy import delete, insert, select, update
 from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession, async_scoped_session
 
@@ -84,7 +84,7 @@ class UrlShortenerService:
                 await self.db_session.rollback()
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
-                    detail="Unique constraint violated",
+                    detail=f"The {target_url} already has a key",
                 )  # TODO: Improve the error handling
 
     async def forward_to_target_url(self, url_key: str, request_url: str) -> str:
@@ -115,7 +115,7 @@ class UrlShortenerService:
                 result = await self.db_session.execute(stmt)
                 url = result.scalar_one()
                 logger.debug("Successfully fetched the target url from db")
-                await self.update_clicks(url=url)
+                await self._update_clicks(url=url)
                 return url.target_url
             except NoResultFound:
                 logger.error(
@@ -128,7 +128,7 @@ class UrlShortenerService:
                     detail=f"URL `{request_url}` doesn't exist",
                 )  # TODO: Improve the error handling
 
-    async def update_clicks(self, url: Url) -> None:
+    async def _update_clicks(self, url: Url) -> None:
         """
         Increment the click count for a given URL record.
 
@@ -141,6 +141,37 @@ class UrlShortenerService:
         stmt = update(Url).where(Url.id == url.id).values(clicks=clicks)
 
         await self.db_session.execute(stmt)
+
+    async def deactivate_url_key(self, url_key: str) -> None:
+        """
+        Deactivate a URL by deleting it from the database.
+
+        Parameters
+        ----------
+        url_key : str
+            The key of the URL to be deactivated.
+
+        Raises
+        ------
+        HTTPException
+            If the URL key does not exist in the database.
+        """
+        stmt = delete(Url).where(Url.key == url_key, Url.is_active == True)  # noqa: E712
+
+        async with self.db_session.begin():
+            try:
+                await self.db_session.execute(stmt)
+                logger.debug("Successfully deleted the url from db")
+            except NoResultFound:
+                logger.error(
+                    "The url key is not found in the db",
+                    exc_info=True,
+                )
+                await self.db_session.rollback()
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"url key `{url_key}` doesn't exist",
+                )  # TODO: Improve the error handling
 
 
 def get_url_shortener_service(
