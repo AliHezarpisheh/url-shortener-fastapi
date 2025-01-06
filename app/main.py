@@ -12,6 +12,7 @@ from config.base import settings
 
 from .healthcheck import router as health_check_router
 from .lifespan import lifespan
+from .routers import router as url_shortener_router
 
 # Instantiate `FastAPI`
 app = FastAPI(
@@ -28,3 +29,4 @@ app = FastAPI(
 
 # Include routers
 app.include_router(health_check_router)
+app.include_router(url_shortener_router)
