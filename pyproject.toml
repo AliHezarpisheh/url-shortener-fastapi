@@ -98,6 +98,9 @@ required_plugins = [
 testpaths = "tests"
 xfail_strict = true
 
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope="function"
+
 
 [tool.coverage.run]
 parallel = true
