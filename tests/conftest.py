@@ -30,7 +30,7 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     )
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture()
 async def client() -> AsyncGenerator[AsyncClient, None]:
     """Fixture to create a FastAPI test client."""
     async with AsyncClient(
