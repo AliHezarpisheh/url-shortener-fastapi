@@ -3,7 +3,7 @@
 from typing import Annotated
 
 from fastapi import Depends, HTTPException, status
-from sqlalchemy import insert, select
+from sqlalchemy import insert, select, update
 from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession, async_scoped_session
 
@@ -35,11 +35,57 @@ class UrlShortenerService:
             The created URL object.
         """
         key = generate_random_key(length=5)
-        secret_key = generate_random_key(length=8)
         url = await self._create_url(
-            target_url=target_url, key=key, secret_key=secret_key
+            target_url=target_url,
+            key=key,
         )
         return url
+
+    async def _create_url(self, target_url: str, key: str) -> Url:
+        """Create a URL entry in the database.
+
+        Parameters
+        ----------
+        target_url : str
+            The original URL to be shortened.
+        key : str
+            The generated key for the shortened URL.
+
+        Returns
+        -------
+        Url
+            The created URL object.
+
+        Raises
+        ------
+        HTTPException
+            If a unique constraint is violated.
+        """
+        stmt = (
+            insert(Url)
+            .values(
+                key=key,
+                target_url=target_url,
+            )
+            .returning(Url)
+        )
+
+        async with self.db_session.begin():
+            try:
+                result = await self.db_session.execute(stmt)
+                url = result.scalar_one()
+                logger.debug("Successfully created and retrieved the url from db")
+                return url
+            except IntegrityError:
+                logger.error(
+                    "Database unique constraint violated for `urls` table",
+                    exc_info=True,
+                )
+                await self.db_session.rollback()
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="Unique constraint violated",
+                )  # TODO: Improve the error handling
 
     async def forward_to_target_url(self, url_key: str, request_url: str) -> str:
         """
@@ -69,6 +115,7 @@ class UrlShortenerService:
                 result = await self.db_session.execute(stmt)
                 url = result.scalar_one()
                 logger.debug("Successfully fetched the target url from db")
+                await self.update_clicks(url=url)
                 return url.target_url
             except NoResultFound:
                 logger.error(
@@ -81,54 +128,19 @@ class UrlShortenerService:
                     detail=f"URL `{request_url}` doesn't exist",
                 )  # TODO: Improve the error handling
 
-    async def _create_url(self, target_url: str, key: str, secret_key: str) -> Url:
-        """Create a URL entry in the database.
+    async def update_clicks(self, url: Url) -> None:
+        """
+        Increment the click count for a given URL record.
 
         Parameters
         ----------
-        target_url : str
-            The original URL to be shortened.
-        key : str
-            The generated key for the shortened URL.
-        secret_key : str
-            The secret key for managing the URL.
-
-        Returns
-        -------
-        Url
-            The created URL object.
-
-        Raises
-        ------
-        HTTPException
-            If a unique constraint is violated.
+        url : Url
+            The URL database record for which the click count needs to be updated.
         """
-        stmt = (
-            insert(Url)
-            .values(
-                key=key,
-                secret_key=secret_key,
-                target_url=target_url,
-            )
-            .returning(Url)
-        )
+        clicks = url.clicks + 1  # TODO: Think of scalability here, is it handled?
+        stmt = update(Url).where(Url.id == url.id).values(clicks=clicks)
 
-        async with self.db_session.begin():
-            try:
-                result = await self.db_session.execute(stmt)
-                url = result.scalar_one()
-                logger.debug("Successfully created and retrieved the url from db")
-                return url
-            except IntegrityError:
-                logger.error(
-                    "Database unique constraint violated for `urls` table",
-                    exc_info=True,
-                )
-                await self.db_session.rollback()
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail="Unique constraint violated",
-                )  # TODO: Improve the error handling
+        await self.db_session.execute(stmt)
 
 
 def get_url_shortener_service(

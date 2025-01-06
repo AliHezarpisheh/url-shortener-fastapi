@@ -13,9 +13,6 @@ class Url(CommonMixin, Base):
     key: Mapped[str] = mapped_column(
         unique=True, index=True, comment="Unique shortened URL key"
     )
-    secret_key: Mapped[str] = mapped_column(
-        unique=True, index=True, comment="Unique secret key for URL management"
-    )
     target_url: Mapped[str] = mapped_column(
         index=True, comment="Original URL being shortened"
     )
