@@ -159,10 +159,9 @@ class UrlShortenerService:
         stmt = delete(Url).where(Url.key == url_key, Url.is_active == True)  # noqa: E712
 
         async with self.db_session.begin():
-            try:
-                await self.db_session.execute(stmt)
-                logger.debug("Successfully deleted the url from db")
-            except NoResultFound:
+            result = await self.db_session.execute(stmt)
+            logger.debug("Successfully deleted the url from db")
+            if result.rowcount == 0:
                 logger.error(
                     "The url key is not found in the db",
                     exc_info=True,

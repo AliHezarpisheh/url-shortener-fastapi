@@ -85,14 +85,13 @@ async def forward_to_target_url(
 @router.delete(
     "/{url_key}",
     status_code=status.HTTP_204_NO_CONTENT,
-    response_class=RedirectResponse,
 )
 async def deactivate_url_key(
     url_key: Annotated[str, Path()],
     url_shortener_service: Annotated[
         UrlShortenerService, Depends(get_url_shortener_service)
     ],
-) -> RedirectResponse:
+) -> None:
     """
     Deactivate a shortened URL key, preventing further redirection.
 
